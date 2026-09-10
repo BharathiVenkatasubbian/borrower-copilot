@@ -1,0 +1,1739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Borrower Copilot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#F6F4EF; --panel:#FFFFFF; --ink:#1E231F; --muted:#666E68; --rule:#DCD6C7;
+    --accent:#1F6E5C; --accent-ink:#FFFFFF; --accent-soft:#E4EFEA; --accent-strong:#134A3D;
+    --good:#1F7A45; --good-soft:#E4F3E8;
+    --warn:#9C6B12; --warn-soft:#FBF0DD;
+    --bad:#A6362B; --bad-soft:#FBE7E3;
+    --mono:"IBM Plex Mono",Menlo,Consolas,monospace;
+    --sans:"Source Sans 3","Segoe UI",Helvetica,Arial,sans-serif;
+    --display:"Fraunces",Georgia,serif;
+    --radius:10px;
+    --shadow:0 1px 2px rgba(20,20,15,.06), 0 6px 20px -8px rgba(20,20,15,.12);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#121512; --panel:#191D19; --ink:#EAEAE4; --muted:#9BA39C; --rule:#2C332C;
+      --accent:#6FBFA6; --accent-ink:#0C1512; --accent-soft:#1B2A24; --accent-strong:#9AD8C2;
+      --good:#6FBF86; --good-soft:#17251A;
+      --warn:#D9A64E; --warn-soft:#2A2114;
+      --bad:#E38A7C; --bad-soft:#2B1917;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 6px 24px -10px rgba(0,0,0,.5);
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.5}
+  #root{display:block}
+  .shell{max-width:640px;margin:0 auto;padding:1.25rem 1rem 4rem}
+  .topbar{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;padding:.5rem 0 1.25rem;border-bottom:1px solid var(--rule);margin-bottom:1.5rem}
+  .wordmark{font-family:var(--display);font-weight:500;font-size:1.4rem;letter-spacing:-.01em}
+  .wordmark em{font-style:italic;color:var(--accent-strong)}
+  .tag{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-top:.15rem}
+  .reset-link{background:none;border:none;color:var(--muted);font-size:.82rem;cursor:pointer;text-decoration:underline;padding:0;font-family:var(--sans)}
+  .reset-link:hover{color:var(--accent-strong)}
+
+  .panel{background:var(--panel);border:1px solid var(--rule);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.5rem}
+  .panel + .panel{margin-top:1rem}
+
+  h1.hero{font-family:var(--display);font-weight:500;font-size:1.9rem;line-height:1.15;margin:0 0 .6rem;text-wrap:balance}
+  p.lede{color:var(--muted);font-size:1rem;margin:0 0 1.2rem;max-width:34rem}
+  .privacy{display:flex;gap:.5rem;align-items:flex-start;background:var(--accent-soft);border-radius:8px;padding:.75rem .9rem;font-size:.85rem;color:var(--accent-strong);margin:0 0 1.3rem}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;font-family:var(--sans);font-size:.95rem;font-weight:600;padding:.7rem 1.1rem;border-radius:8px;border:1px solid transparent;cursor:pointer;transition:transform .05s ease}
+  .btn:active{transform:scale(.98)}
+  .btn-primary{background:var(--accent);color:var(--accent-ink)}
+  .btn-primary:hover{background:var(--accent-strong)}
+  .btn-ghost{background:transparent;color:var(--ink);border-color:var(--rule)}
+  .btn-ghost:hover{border-color:var(--accent)}
+  .btn-block{width:100%}
+  .btn-row{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem}
+  .btn[disabled]{opacity:.45;cursor:not-allowed}
+  .link{background:none;border:none;color:var(--muted);font-size:.85rem;cursor:pointer;text-decoration:underline;padding:.2rem 0;font-family:var(--sans)}
+  .link:hover{color:var(--accent-strong)}
+  .link.strong{color:var(--accent-strong);font-weight:600;text-decoration:none}
+
+  .samples{display:grid;gap:.7rem;margin-top:.4rem}
+  .sample-card{display:flex;flex-direction:column;gap:.15rem;text-align:left;background:var(--bg);border:1px solid var(--rule);border-radius:8px;padding:.85rem 1rem;cursor:pointer;font-family:var(--sans);color:var(--ink)}
+  .sample-card:hover{border-color:var(--accent)}
+  .sample-card .name{font-weight:700;font-size:.98rem}
+  .sample-card .desc{font-size:.83rem;color:var(--muted)}
+
+  .progress{display:flex;align-items:center;gap:.6rem;font-size:.8rem;color:var(--muted);margin-bottom:1rem}
+  .progress .bar{flex:1;height:6px;background:var(--rule);border-radius:99px;overflow:hidden}
+  .progress .fill{height:100%;background:var(--accent);border-radius:99px;transition:width .3s ease}
+  .phase-pill{display:inline-block;font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:.2rem .55rem;border-radius:99px;background:var(--accent-soft);color:var(--accent-strong);margin-bottom:.7rem}
+  .phase-pill.optional{background:var(--warn-soft);color:var(--warn)}
+
+  .q-prompt{font-family:var(--display);font-size:1.3rem;font-weight:500;line-height:1.3;margin:0 0 .35rem;text-wrap:balance}
+  .q-help{font-size:.87rem;color:var(--muted);margin:0 0 1.1rem;max-width:32rem}
+  .q-why{font-size:.8rem;color:var(--muted);font-style:italic;margin:0 0 1.1rem;max-width:32rem}
+
+  .field{display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem}
+  .field .affix{color:var(--muted);font-family:var(--mono);font-size:1rem}
+  input[type=number],input[type=text]{font-family:var(--mono);font-size:1.05rem;padding:.6rem .7rem;border:1px solid var(--rule);border-radius:8px;background:var(--bg);color:var(--ink);width:100%}
+  input:focus,button:focus-visible,.opt:focus-visible,.sample-card:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  .opts{display:grid;gap:.55rem;margin:.3rem 0 1rem}
+  .opt{display:block;text-align:left;background:var(--bg);border:1px solid var(--rule);border-radius:8px;padding:.75rem .9rem;font-family:var(--sans);font-size:.95rem;color:var(--ink);cursor:pointer}
+  .opt:hover{border-color:var(--accent)}
+  .opt.selected{border-color:var(--accent);background:var(--accent-soft);font-weight:600}
+  .opts.two-col{grid-template-columns:1fr 1fr}
+
+  .wizard-actions{display:flex;justify-content:space-between;align-items:center;gap:.6rem;margin-top:1.1rem;flex-wrap:wrap}
+  .wizard-actions .left{display:flex;gap:1rem;align-items:center}
+
+  .milestone{text-align:center}
+  .milestone .big{font-family:var(--display);font-size:1.5rem;font-weight:500;margin:0 0 .5rem}
+  .milestone p{color:var(--muted);font-size:.9rem;margin:0 auto 1.1rem;max-width:26rem}
+
+  /* ---- results ---- */
+  .verdict-banner{border-radius:var(--radius);padding:1.1rem 1.25rem;margin-bottom:1rem}
+  .verdict-banner.borrow{background:var(--good-soft);border:1px solid var(--good)}
+  .verdict-banner.borrow_less{background:var(--warn-soft);border:1px solid var(--warn)}
+  .verdict-banner.dont{background:var(--bad-soft);border:1px solid var(--bad)}
+  .verdict-banner .label{font-family:var(--display);font-size:1.5rem;font-weight:500;margin:0 0 .3rem}
+  .verdict-banner.borrow .label{color:var(--good)}
+  .verdict-banner.borrow_less .label{color:var(--warn)}
+  .verdict-banner.dont .label{color:var(--bad)}
+  .verdict-banner p{margin:.2rem 0 0;font-size:.92rem;color:var(--ink)}
+
+  .confidence-row{display:flex;align-items:center;gap:.5rem;font-size:.8rem;color:var(--muted);margin-bottom:1.2rem;flex-wrap:wrap}
+  .confidence-chip{font-family:var(--mono);font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:.15rem .5rem;border-radius:99px}
+  .confidence-chip.high{background:var(--good-soft);color:var(--good)}
+  .confidence-chip.medium{background:var(--warn-soft);color:var(--warn)}
+  .confidence-chip.low{background:var(--bad-soft);color:var(--bad)}
+
+  .out-label{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 .5rem}
+  .out-label .o{color:var(--accent-strong);margin-right:.5rem}
+  .req-line{font-size:.85rem;color:var(--muted);margin:0 0 .7rem}
+  .req-line b{color:var(--ink);font-family:var(--mono)}
+  .two-num{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-bottom:.8rem}
+  @media (max-width:480px){.two-num{grid-template-columns:1fr}}
+  .num-card{background:var(--bg);border:1px solid var(--rule);border-radius:8px;padding:.9rem 1rem}
+  .num-card .num-tag{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
+  .num-card .num-val{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:1.35rem;font-weight:600;margin:.2rem 0 0}
+  .num-card.use{border-color:var(--accent);background:var(--accent-soft)}
+  .num-card.dim{opacity:.6}
+  .use-flag{display:inline-block;margin-top:.3rem;font-size:.72rem;font-weight:700;color:var(--accent-strong)}
+  .use-line{font-size:.88rem;margin:.2rem 0 0}
+  .cap-note{background:var(--warn-soft);border-left:3px solid var(--warn);border-radius:6px;padding:.7rem .9rem;font-size:.82rem;color:var(--ink);margin:.7rem 0 0}
+  .why-line{font-size:.85rem;color:var(--muted);margin:.7rem 0 0}
+
+  .band-line{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:1.5rem;font-weight:600;margin:.2rem 0 .3rem}
+  .band-sub{font-size:.85rem;color:var(--muted);margin:0 0 .3rem}
+
+  table.trade{width:100%;border-collapse:collapse;font-size:.86rem;margin:.7rem 0 .9rem}
+  table.trade th,table.trade td{text-align:left;padding:.5rem .5rem;border-bottom:1px solid var(--rule)}
+  table.trade th{color:var(--muted);font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+  table.trade td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+  table.trade tr.rec td{background:var(--accent-soft);font-weight:600}
+
+  .stress-box{background:var(--warn-soft);border-left:3px solid var(--warn);border-radius:6px;padding:.8rem .95rem;font-size:.86rem}
+  .stress-box.ok{background:var(--good-soft);border-left-color:var(--good)}
+
+  .card{background:linear-gradient(180deg,var(--accent-soft),var(--panel) 60%);border:1.5px solid var(--accent);border-radius:var(--radius);padding:1.4rem 1.5rem;margin-top:1rem}
+  .card .card-eyebrow{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-strong);font-weight:700;margin:0 0 .3rem}
+  .card h2{font-family:var(--display);font-size:1.4rem;margin:0 0 1rem;font-weight:500}
+  .card-grid{display:grid;gap:.7rem}
+  .card-row{display:flex;justify-content:space-between;gap:1rem;padding-bottom:.6rem;border-bottom:1px dashed var(--rule)}
+  .card-row:last-child{border-bottom:none;padding-bottom:0}
+  .card-row .k{font-size:.82rem;color:var(--muted);flex-shrink:0}
+  .card-row .v{font-family:var(--mono);font-weight:600;text-align:right;font-variant-numeric:tabular-nums;font-size:.86rem}
+  .card-line{font-size:.86rem;margin-top:.9rem;padding-top:.9rem;border-top:1px solid var(--rule);color:var(--ink)}
+  .card-foot{font-size:.72rem;color:var(--muted);margin-top:.9rem}
+
+  .assumptions{font-size:.78rem;color:var(--muted);margin-top:1rem}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+
+<!-- Rules are separated from the UI on purpose (see src/rules.js, src/questions.js,
+     src/engine.js for the same code as standalone, individually-readable files).
+     They are inlined here, byte-for-byte identical, so this single HTML file
+     runs with a plain double-click and never depends on file:// script loading,
+     which some browsers block for external Babel-transformed scripts. -->
+<script>
+/**
+ * rules.js — Borrower Copilot rules engine
+ *
+ * PURE LOGIC ONLY. No DOM, no React, no I/O.
+ * Every constant here has a matching row in RULES.md — if you change a
+ * number here, change it there too (and vice versa).
+ *
+ * Runs in the browser (attaches to window.Rules) and in Node (module.exports)
+ * so the same file can be unit-tested and used to generate the run-throughs.
+ */
+(function (global) {
+  "use strict";
+
+  // ---------------------------------------------------------------------
+  // 1. PRODUCTS
+  // ---------------------------------------------------------------------
+  // Rate bands are annual, reducing-balance, indicative bands for the Indian
+  // market as of early 2026 (documented judgement, not a live rate feed —
+  // see RULES.md "source" column). "unknown" tier is NOT the worst tier —
+  // it sits in the middle, wider, per the "unknown is never zero" rule.
+  const PRODUCTS = {
+    personal_loan: {
+      key: "personal_loan",
+      label: "Personal Loan",
+      secured: false,
+      maxTenureMonths: 60,
+      processingFeePct: 2.0,
+      rateBands: {
+        high: [10.5, 12.5],
+        good: [12.5, 15],
+        fair: [15, 18],
+        low: [18, 24],
+        unknown: [13, 17],
+      },
+      lenderFoirCeiling: 0.5,
+      incomeMultipleCap: 20, // lenders typically cap unsecured sanction near ~20x net monthly income
+    },
+    gold_loan: {
+      key: "gold_loan",
+      label: "Gold Loan",
+      secured: true,
+      maxTenureMonths: 36,
+      processingFeePct: 0.75,
+      rateBands: {
+        high: [9, 11],
+        good: [10, 12],
+        fair: [11, 13.5],
+        low: [12, 15],
+        unknown: [11, 14],
+      },
+      lenderFoirCeiling: 0.55,
+      ltvCap: 0.75, // RBI ceiling on gold-loan LTV
+    },
+    lap: {
+      key: "lap",
+      label: "Loan Against Property",
+      secured: true,
+      maxTenureMonths: 180,
+      processingFeePct: 1.0,
+      rateBands: {
+        high: [9, 10.5],
+        good: [10, 11.5],
+        fair: [11, 13],
+        low: [12.5, 15],
+        unknown: [10.5, 13],
+      },
+      lenderFoirCeiling: 0.55,
+      ltvCap: 0.6,
+    },
+    business_loan: {
+      key: "business_loan",
+      label: "Business Loan (unsecured)",
+      secured: false,
+      maxTenureMonths: 60,
+      processingFeePct: 2.0,
+      rateBands: {
+        high: [11, 13],
+        good: [13, 15],
+        fair: [15, 18],
+        low: [18, 22],
+        unknown: [14, 17],
+      },
+      lenderFoirCeiling: 0.5,
+      incomeMultipleCap: 15,
+    },
+    two_wheeler_loan: {
+      key: "two_wheeler_loan",
+      label: "Two-Wheeler / EV Loan",
+      secured: true,
+      maxTenureMonths: 48,
+      processingFeePct: 2.5,
+      rateBands: {
+        high: [11, 13],
+        good: [13, 15],
+        fair: [15, 17],
+        low: [17, 20],
+        unknown: [14, 16],
+      },
+      lenderFoirCeiling: 0.5,
+      ltvCap: 0.85,
+    },
+  };
+
+  // ---------------------------------------------------------------------
+  // 1b. NEED-RELATIVE CAP
+  // ---------------------------------------------------------------------
+  // A borrower who walks in asking for ₹2,00,000 and is shown a "safe" ₹9,00,000
+  // is being nudged toward debt they never came for — and the headline number
+  // stops being useful for the one decision in front of them. So the amounts we
+  // PUT IN FRONT of the borrower (O2's two ceilings, and therefore O4's
+  // recommended amount) are never shown running far past the stated need.
+  //
+  // We still COMPUTE full underlying capacity (it drives the "you could actually
+  // afford more / less" explanation, and the stress test), but the number on the
+  // card is capped at 25% over what they asked for — enough headroom for the
+  // processing fee, a modest cost overrun, and rounding, and nothing more.
+  const NEED_HEADROOM_MULTIPLE = 1.25;
+
+  function needCap(requestedAmount) {
+    const r = Number(requestedAmount) || 0;
+    return r > 0 ? Math.round(r * NEED_HEADROOM_MULTIPLE) : Infinity;
+  }
+
+  // ---------------------------------------------------------------------
+  // 2. CREDIT SCORE TIERS
+  // ---------------------------------------------------------------------
+  function scoreTier(score) {
+    if (score === null || score === undefined || score === "unknown") return "unknown";
+    const s = Number(score);
+    if (s >= 750) return "high";
+    if (s >= 700) return "good";
+    if (s >= 650) return "fair";
+    return "low";
+  }
+
+  // ---------------------------------------------------------------------
+  // 3. ROUTING — which product actually fits, not just what the borrower typed
+  // ---------------------------------------------------------------------
+  function recommendProduct(a) {
+    const requested = a.loanTypeRequested;
+    const borrowerUnsure = !requested || requested === "unsure";
+    let suggested = borrowerUnsure ? null : requested;
+    let note = null;
+
+    const hasProperty = a.collateralType === "property" && Number(a.collateralValue) > 0;
+    const hasGold = a.collateralType === "gold" && Number(a.collateralValue) > 0;
+
+    if (a.purpose === "business_growth") {
+      if (hasProperty) {
+        suggested = "lap";
+        note =
+          "You have unencumbered property. A Loan Against Property is usually 4-6 points cheaper than an unsecured business loan for the same amount.";
+      } else if (hasGold) {
+        suggested = "gold_loan";
+        note = "Pledging gold usually beats an unsecured business loan by several points.";
+      } else {
+        suggested = "business_loan";
+      }
+    } else if (a.purpose === "vehicle_purchase") {
+      suggested = "two_wheeler_loan";
+    } else {
+      // wedding, medical, education, home_renovation, debt_consolidation, other
+      if (hasGold) {
+        suggested = "gold_loan";
+        note = "Pledging gold you already hold is typically 3-5 points cheaper than an unsecured personal loan.";
+      } else {
+        suggested = "personal_loan";
+      }
+    }
+
+    // If the borrower said "not sure", we're recommending, not overriding —
+    // surface the pick as a positive suggestion, not a correction.
+    if (borrowerUnsure && !note) {
+      note = `Based on your purpose${hasProperty || hasGold ? " and the collateral you hold" : ""}, a ${PRODUCTS[suggested].label} is the right fit.`;
+    }
+
+    return {
+      suggested,
+      note,
+      requestedDiffers: !borrowerUnsure && suggested !== requested,
+      borrowerUnsure,
+    };
+  }
+
+  // ---------------------------------------------------------------------
+  // 4. INCOME MODEL
+  // ---------------------------------------------------------------------
+  // Two views of income, on purpose:
+  //  - "lender view": only what can be documented (ITR / bank statement / payslip).
+  //    This is what a lender will actually underwrite against for an UNSECURED product.
+  //  - "borrower view" (safe-carry income): what the borrower actually has access to
+  //    each month, including undocumented cash, haircut for volatility/unverifiability.
+  // This divergence is *why* O2's two numbers differ for the self-employed/informal cases.
+  function lenderViewIncome(a) {
+    return Number(a.documentedMonthlyIncome || 0);
+  }
+
+  function safeCarryIncome(a) {
+    const base = a.selfReportedMonthlyIncome != null ? Number(a.selfReportedMonthlyIncome) : lenderViewIncome(a);
+    let haircut = 0;
+    // Cash-based / unverifiable / hours-variable income is real but less reliable than
+    // documented salary or pension — same treatment across these three income types.
+    if (["self_employed_informal", "gig_informal", "part_time"].includes(a.incomeType)) haircut += 0.2;
+    // A student's or unemployed person's own reported income (stipend, odd jobs) is
+    // thinner and less predictable still than a part-timer's — a steeper haircut.
+    if (["student", "unemployed"].includes(a.incomeType)) haircut += 0.3;
+    if (a.variableIncomeSharePct) haircut += (Number(a.variableIncomeSharePct) / 100) * 0.15;
+    haircut = Math.min(haircut, 0.4);
+    return Math.round(base * (1 - haircut));
+  }
+
+  // ---------------------------------------------------------------------
+  // 5. FOIR CEILINGS (Fixed Obligation to Income Ratio)
+  // ---------------------------------------------------------------------
+  function safeCarryFoirCeiling(a) {
+    let ceiling = 0.4; // base: a widely-used affordability convention
+    if (["self_employed_informal", "gig_informal", "part_time", "student", "unemployed"].includes(a.incomeType)) {
+      ceiling -= 0.05;
+    }
+    if (a.variableIncomeSharePct && Number(a.variableIncomeSharePct) >= 40) ceiling -= 0.05;
+    if (a.emergencySavingsMonths != null && Number(a.emergencySavingsMonths) < 1) ceiling -= 0.05;
+    if (a.recentBounce) ceiling -= 0.05;
+    // Each dependent is a claim on income that already exists before a new EMI does —
+    // 2 percentage points per dependent, capped at 10pp (5+ dependents) so it can never
+    // alone drive the ceiling to its floor.
+    const dependents = Number(a.dependentsCount) || 0;
+    ceiling -= Math.min(dependents * 0.02, 0.1);
+    const income = safeCarryIncome(a);
+    if (income > 150000) ceiling += 0.05;
+    return clamp(ceiling, 0.2, 0.5);
+  }
+
+  // Household-expense sanity check on the safe EMI. FOIR works off gross-ish
+  // income; this makes sure that after essential spending AND existing EMIs,
+  // the new EMI still leaves a real cushion. No more than 60% of what is
+  // genuinely left over after essentials should go to the new EMI — the rest
+  // is the borrower's buffer against a bad month. Only applied when the
+  // borrower actually gave an expenses figure.
+  function expenseCappedEmi(a, blendedIncome) {
+    const expenses = Number(a.householdExpenses);
+    if (!expenses || expenses <= 0) return Infinity;
+    const existingEmi = Number(a.existingMonthlyEmi) || 0;
+    const leftover = blendedIncome - expenses - existingEmi;
+    return Math.max(0, leftover * 0.6);
+  }
+
+  function lenderFoirCeiling(product, tier) {
+    let c = product.lenderFoirCeiling;
+    if (tier === "high") c += 0.03;
+    if (tier === "low") c -= 0.05;
+    return clamp(c, 0.3, 0.6);
+  }
+
+  function clamp(v, lo, hi) {
+    return Math.max(lo, Math.min(hi, v));
+  }
+
+  // ---------------------------------------------------------------------
+  // 6. EMI / AMORTIZATION MATH
+  // ---------------------------------------------------------------------
+  function emiForLoan(principal, annualRatePct, tenureMonths) {
+    const r = annualRatePct / 1200;
+    if (principal <= 0 || tenureMonths <= 0) return 0;
+    if (r === 0) return principal / tenureMonths;
+    const f = Math.pow(1 + r, tenureMonths);
+    return (principal * r * f) / (f - 1);
+  }
+
+  function maxPrincipalForEmi(maxEmi, annualRatePct, tenureMonths) {
+    const r = annualRatePct / 1200;
+    if (maxEmi <= 0 || tenureMonths <= 0) return 0;
+    if (r === 0) return maxEmi * tenureMonths;
+    const f = Math.pow(1 + r, tenureMonths);
+    return (maxEmi * (f - 1)) / (r * f);
+  }
+
+  // All-in APR: the fee reduces what's actually disbursed, but the borrower
+  // still pays EMI calculated on the *full* principal at the nominal rate.
+  // APR is the flat rate that would produce the SAME EMI if it were charged
+  // on the (principal - fee) actually received. Solved by bisection —
+  // there's no closed form once a fee is involved.
+  function solveAPR(principal, feeAmount, nominalAnnualRatePct, tenureMonths) {
+    const emi = emiForLoan(principal, nominalAnnualRatePct, tenureMonths);
+    const netDisbursed = Math.max(principal - feeAmount, 1);
+    let lo = nominalAnnualRatePct;
+    let hi = nominalAnnualRatePct + 20; // fee impact is bounded; 20pp headroom is always enough at realistic fee levels
+    for (let i = 0; i < 60; i++) {
+      const mid = (lo + hi) / 2;
+      const testEmi = emiForLoan(netDisbursed, mid, tenureMonths);
+      if (testEmi > emi) hi = mid;
+      else lo = mid;
+    }
+    return (lo + hi) / 2;
+  }
+
+  // ---------------------------------------------------------------------
+  // 7. CONFIDENCE
+  // ---------------------------------------------------------------------
+  // Confidence starts modest on the must-set alone, and rises with every
+  // ADDITIONAL question answered that actually applies to this borrower.
+  // Never narrows a range from an unanswered question.
+  function computeConfidence(answeredAdditionalCount, applicableAdditionalCount) {
+    const base = 45;
+    if (applicableAdditionalCount === 0) return base;
+    const gained = Math.round((answeredAdditionalCount / applicableAdditionalCount) * 55);
+    return clamp(base + gained, 45, 100);
+  }
+
+  // Width multiplier applied to rate bands / amount ranges. Low confidence => wider.
+  function bandWidthMultiplier(confidence) {
+    // confidence 45 -> 1.6x width, confidence 100 -> 1.0x width
+    return 1 + ((100 - confidence) / 55) * 0.6;
+  }
+
+  function widenBand(band, multiplier) {
+    const mid = (band[0] + band[1]) / 2;
+    const halfWidth = ((band[1] - band[0]) / 2) * multiplier;
+    return [round1(Math.max(0, mid - halfWidth)), round1(mid + halfWidth)];
+  }
+
+  function round1(n) {
+    return Math.round(n * 10) / 10;
+  }
+
+  // ---------------------------------------------------------------------
+  // 8. VERDICT (O1)
+  // ---------------------------------------------------------------------
+  // Rules fire top-down; first match wins. "Don't borrow" MUST be reachable —
+  // rules 1 and 2 below are the hard stops that make it reachable.
+  function computeVerdict(a, existingFoirPct, safeCarryAmount, lenderSanction, requestedAmount, productSecured) {
+    const reasons = [];
+
+    if (a.recentBounce && (a.emergencySavingsMonths == null || Number(a.emergencySavingsMonths) < 1)) {
+      reasons.push(
+        "You've had a bounced payment in the last 6 months and no savings cushion behind you. A new EMI on top of that raises real risk of another default."
+      );
+      return { verdict: "dont", reasons };
+    }
+
+    if (existingFoirPct >= 0.45) {
+      reasons.push(
+        `Your existing EMIs already take up about ${Math.round(existingFoirPct * 100)}% of your income. That's already at or past a safe ceiling — a new loan makes this worse, not better.`
+      );
+      return { verdict: "dont", reasons };
+    }
+
+    if (safeCarryAmount <= 0) {
+      reasons.push(
+        "Based on what you can safely commit each month, there isn't room for this loan right now without cutting into essentials."
+      );
+      return { verdict: "dont", reasons };
+    }
+
+    // Only a hard-stop for UNSECURED products — a secured product (gold/LAP)
+    // can still be sanctioned against collateral even with zero documented
+    // income, which this simplified model doesn't otherwise size upward for
+    // (see RULES.md limitations).
+    if (!productSecured && lenderSanction <= 0) {
+      reasons.push(
+        "You don't have documented income a lender can verify (no payslip, ITR, or pension credit on file), and no co-applicant is on this loan. A lender won't sanction an unsecured loan against undocumented support alone — add a co-applicant with verifiable income, or bring collateral, before applying."
+      );
+      return { verdict: "dont", reasons };
+    }
+
+    const practicalCeiling = Math.min(safeCarryAmount, lenderSanction);
+
+    // General safety net: whatever the specific cause, a practical ceiling of
+    // zero is a "don't borrow" outcome, not a confusing "borrow less down to ₹0."
+    // (Rule 4 above already covers the unsecured/no-documented-income case
+    // explicitly with a more specific reason; this catches any other route to
+    // the same zero, e.g. a secured product whose FOIR-based figure lands at
+    // zero even though this model doesn't yet size collateral upward — see
+    // RULES.md §12.)
+    if (practicalCeiling <= 0) {
+      reasons.push(
+        "Between your documented income, existing obligations, and collateral, there's currently no amount a lender is likely to sanction for this loan. Strengthening your documentation, adding a co-applicant, or revisiting the collateral offered would change this."
+      );
+      return { verdict: "dont", reasons };
+    }
+
+    const shortfallPct = (requestedAmount - practicalCeiling) / requestedAmount;
+    if (shortfallPct > 0.1) {
+      reasons.push(
+        `What you can realistically get (₹${Math.round(practicalCeiling).toLocaleString("en-IN")}) is meaningfully less than what you asked for (₹${Math.round(requestedAmount).toLocaleString("en-IN")}). Borrowing the full amount isn't realistic right now.`
+      );
+      return { verdict: "borrow_less", reasons };
+    }
+
+    reasons.push("What you can safely carry comfortably covers what you asked for.");
+    return { verdict: "borrow", reasons };
+  }
+
+  const api = {
+    PRODUCTS,
+    NEED_HEADROOM_MULTIPLE,
+    needCap,
+    scoreTier,
+    recommendProduct,
+    lenderViewIncome,
+    safeCarryIncome,
+    safeCarryFoirCeiling,
+    expenseCappedEmi,
+    lenderFoirCeiling,
+    emiForLoan,
+    maxPrincipalForEmi,
+    solveAPR,
+    computeConfidence,
+    bandWidthMultiplier,
+    widenBand,
+    computeVerdict,
+    clamp,
+    round1,
+  };
+
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = api;
+  } else {
+    global.Rules = api;
+  }
+})(typeof window !== "undefined" ? window : globalThis);
+</script>
+<script>
+/**
+ * questions.js — the question bank.
+ *
+ * Each question has:
+ *   id            — key stored in the answers object
+ *   tier          — "must" or "additional"
+ *   appliesIf(a)  — predicate on answers-so-far; if false, the question is skipped
+ *   narrows       — human-readable note on which output(s) this tightens (for RULES.md /
+ *                   for the UI's "why am I being asked this" affordance)
+ *   type          — "select" | "number" | "boolean" | "text"
+ *   options       — for "select"
+ *   allowNA       — if true, the UI shows a "not applicable / don't know" button
+ *   naValue       — the value stored when the borrower presses that button
+ *   naLabel       — the label on that button
+ *   help          — optional one-line helper text shown under the question
+ *
+ * IMPORTANT: this file has zero UI code in it. The wizard component just
+ * walks this array in order, skipping questions whose appliesIf() is false.
+ */
+(function (global) {
+  "use strict";
+
+  const QUESTIONS = [
+    // ---------------------------------------------------------------- MUST
+    {
+      id: "purpose",
+      tier: "must",
+      type: "select",
+      text: "What do you want to borrow for?",
+      options: [
+        { value: "wedding", label: "Wedding or family celebration" },
+        { value: "medical", label: "Medical expense" },
+        { value: "education", label: "Education" },
+        { value: "home_renovation", label: "Home renovation" },
+        { value: "debt_consolidation", label: "Paying off other debt" },
+        { value: "vehicle_purchase", label: "Buying a two-wheeler / EV" },
+        { value: "business_growth", label: "Business — stock, equipment or a vehicle for the business" },
+        { value: "other", label: "Something else" },
+      ],
+      appliesIf: () => true,
+      narrows: "Drives product routing (O2/O3) and the productive-vs-discretionary check (O1).",
+    },
+    {
+      id: "requestedAmount",
+      tier: "must",
+      type: "number",
+      text: "How much do you want to borrow (₹)?",
+      help: "Your best estimate of the actual need. Every output below is measured against this.",
+      appliesIf: () => true,
+      narrows: "The number O1–O4 are all measured against. The amounts shown never run more than 25% past this.",
+    },
+    {
+      id: "loanTypeRequested",
+      tier: "must",
+      type: "select",
+      text: "Which loan type are you looking at — or has a lender already offered you one?",
+      options: [
+        { value: "unsure", label: "Not sure — recommend the right one for me" },
+        { value: "personal_loan", label: "Personal loan (unsecured)" },
+        { value: "gold_loan", label: "Gold loan" },
+        { value: "lap", label: "Loan against property" },
+        { value: "business_loan", label: "Business loan" },
+        { value: "two_wheeler_loan", label: "Two-wheeler / EV loan" },
+      ],
+      appliesIf: () => true,
+      narrows: "O2/O3 — compared against what we'd actually recommend; a mismatch changes the rate band shown.",
+    },
+    {
+      id: "age",
+      tier: "must",
+      type: "number",
+      text: "Your age?",
+      appliesIf: () => true,
+      narrows: "Caps usable tenure in O4 (most lenders stop tenure at 60–65 years of age at maturity).",
+    },
+    {
+      id: "incomeType",
+      tier: "must",
+      type: "select",
+      text: "What best describes your occupation / main income?",
+      options: [
+        { value: "salaried", label: "Salaried" },
+        { value: "self_employed_formal", label: "Self-employed, with ITR / bank statements" },
+        { value: "self_employed_informal", label: "Self-employed, mostly cash" },
+        { value: "gig_informal", label: "Gig / platform work, informal" },
+        { value: "part_time", label: "Part-time work" },
+        { value: "pension", label: "Retired, living on pension" },
+        { value: "student", label: "Student, no independent income" },
+        { value: "unemployed", label: "Not currently working" },
+      ],
+      appliesIf: () => true,
+      narrows: "Sets which additional questions appear next, and the income haircut used for safe-carry (O2/O4).",
+    },
+    {
+      id: "documentedMonthlyIncome",
+      tier: "must",
+      type: "number",
+      text: (a) => {
+        if (a.incomeType === "salaried") return "What's your net monthly take-home pay (₹)?";
+        if (a.incomeType === "pension") return "What's your monthly pension amount (₹)?";
+        if (a.incomeType === "student" || a.incomeType === "unemployed")
+          return "Do you have any income of your own right now — stipend, part-time work, freelance (₹/month)?";
+        return "What does your ITR / bank statement show as average monthly income (₹)?";
+      },
+      allowNA: true,
+      naValue: 0,
+      naLabel: "No documented income",
+      appliesIf: () => true,
+      narrows: "This is the income a lender can verify — it drives the lender-view sanction number in O2.",
+    },
+    {
+      id: "selfReportedMonthlyIncome",
+      tier: "must",
+      type: "number",
+      text: "What actually comes in each month on average, including cash (₹)?",
+      allowNA: true,
+      naValue: null,
+      naLabel: "Same as my documented figure",
+      appliesIf: (a) => a.incomeType !== "salaried" && a.incomeType !== "pension",
+      narrows: "Drives the safe-carry (borrower-view) number in O2 — this is often higher than the documented figure.",
+    },
+    {
+      id: "existingMonthlyEmi",
+      tier: "must",
+      type: "number",
+      text: "What do you pay every month across all existing loans/EMIs right now (₹)?",
+      allowNA: true,
+      naValue: 0,
+      naLabel: "No existing loans / EMIs",
+      appliesIf: () => true,
+      narrows: "Existing FOIR — directly gates O1's hard-stop check and reduces headroom in O2/O4.",
+    },
+    {
+      id: "householdExpenses",
+      tier: "must",
+      type: "number",
+      text: "What are your essential monthly household expenses — rent, food, utilities, school fees (₹)?",
+      appliesIf: () => true,
+      narrows: "Caps the safe EMI in O4 at 60% of what's actually left after essentials, and shown on the card.",
+    },
+    {
+      id: "dependentsCount",
+      tier: "must",
+      type: "number",
+      text: "How many people — besides yourself — depend on your income (children, parents, spouse)?",
+      allowNA: true,
+      naValue: 0,
+      naLabel: "Nobody depends on my income",
+      appliesIf: () => true,
+      narrows: "Each dependent tightens the safe-carry FOIR ceiling in O2/O4 (more of your income is already committed).",
+    },
+    {
+      id: "creditScore",
+      tier: "must",
+      type: "number",
+      text: "Do you know your credit score (CIBIL etc.)?",
+      help: "Enter it if you know it. If you don't, that's fine — it's treated as a middle tier, never a low one.",
+      allowNA: true,
+      naValue: "",
+      naLabel: "I don't know my score",
+      appliesIf: () => true,
+      narrows: "Sets the rate-tier band in O3. Unknown is treated as its own middle tier, never as a low score.",
+    },
+
+    // ---------------------------------------------------------- ADDITIONAL
+    {
+      id: "jobTenureYears",
+      tier: "additional",
+      type: "number",
+      text: "How many years have you been in your current job?",
+      allowNA: true,
+      naValue: 0,
+      naLabel: "Prefer not to say",
+      appliesIf: (a) => a.incomeType === "salaried",
+      narrows: "3+ years tightens the lender-view FOIR ceiling upward slightly in O2 (income stability).",
+    },
+    {
+      id: "existingOffers",
+      tier: "additional",
+      type: "text",
+      text: "Have any lenders already quoted you a rate? If so, what rate?",
+      allowNA: true,
+      naValue: "",
+      naLabel: "No offers yet",
+      appliesIf: () => true,
+      narrows: "Feeds the Negotiation Card's direct comparison line.",
+    },
+    {
+      id: "businessAgeYears",
+      tier: "additional",
+      type: "number",
+      text: "How many years has the business been operating?",
+      allowNA: true,
+      naValue: 0,
+      naLabel: "Not sure",
+      appliesIf: (a) => a.incomeType === "self_employed_formal" || a.incomeType === "self_employed_informal",
+      narrows: "5+ years operating tightens the safe-carry FOIR ceiling upward slightly in O2/O4.",
+    },
+    {
+      id: "variableIncomeSharePct",
+      tier: "additional",
+      type: "number",
+      text: "Roughly what % of your income swings month to month rather than being steady?",
+      allowNA: true,
+      naValue: 0,
+      naLabel: "It's fairly steady",
+      appliesIf: (a) => a.incomeType !== "salaried" && a.incomeType !== "pension",
+      narrows: "Directly reduces safe-carry income and tightens the FOIR ceiling in O2/O4.",
+    },
+    {
+      id: "collateralType",
+      tier: "additional",
+      type: "select",
+      text: "Do you own property or gold you could offer as collateral?",
+      options: [
+        { value: "none", label: "No — nothing to pledge" },
+        { value: "property", label: "Property (land, shop, house) — unencumbered" },
+        { value: "gold", label: "Gold" },
+      ],
+      appliesIf: () => true,
+      narrows: "Can change the product routing entirely in O2/O3 (e.g. business loan → LAP, or personal → gold loan).",
+    },
+    {
+      id: "collateralValue",
+      tier: "additional",
+      type: "number",
+      text: "Roughly what is that collateral worth (₹)?",
+      allowNA: true,
+      naValue: 0,
+      naLabel: "Not sure of the value",
+      appliesIf: (a) => a.collateralType === "property" || a.collateralType === "gold",
+      narrows: "Sets the LTV cap on the lender-view sanction number in O2 for secured products.",
+    },
+    {
+      id: "coApplicantIncome",
+      tier: "additional",
+      type: "number",
+      text: "Will anyone else's income formally count toward this loan (spouse, co-applicant)? Enter their monthly income.",
+      allowNA: true,
+      naValue: 0,
+      naLabel: "No co-applicant",
+      appliesIf: () => true,
+      narrows: "Adds to both the lender-view and safe-carry income base used for O2/O4.",
+    },
+    {
+      id: "financiallyDependent",
+      tier: "additional",
+      type: "boolean",
+      text: "Aside from a formal co-applicant, does a parent or spouse regularly cover a meaningful part of your day-to-day expenses?",
+      appliesIf: () => true,
+      narrows: "If yes, their support is added to your safe-carry income base in O2/O4 — separate from a formal co-applicant.",
+    },
+    {
+      id: "monthlySupportAmount",
+      tier: "additional",
+      type: "number",
+      text: "Roughly how much do they contribute toward your expenses each month (₹)?",
+      allowNA: true,
+      naValue: 0,
+      naLabel: "Don't know",
+      appliesIf: (a) => a.financiallyDependent === true,
+      narrows: "Directly added to the safe-carry income base used for O2/O4 — this is what makes a student or non-earning borrower's numbers realistic.",
+    },
+    {
+      id: "existingLoansDetail",
+      tier: "additional",
+      type: "text",
+      text: "Briefly, what are your existing loans (type, outstanding, rate)?",
+      allowNA: true,
+      naValue: "",
+      naLabel: "Skip",
+      appliesIf: (a) => Number(a.existingMonthlyEmi) > 0,
+      narrows: "Shown in the Negotiation Card as context; flags very high-cost existing debt (e.g. 30%+ app loans).",
+    },
+    {
+      id: "recentBounce",
+      tier: "additional",
+      type: "boolean",
+      text: "Has any EMI or bill payment bounced in the last 6 months?",
+      appliesIf: () => true,
+      narrows: "A hard-stop trigger for O1's \"Don't borrow\" verdict when paired with low savings.",
+    },
+    {
+      id: "emergencySavingsMonths",
+      tier: "additional",
+      type: "number",
+      text: "If your income stopped today, how many months of expenses could you cover from savings?",
+      allowNA: true,
+      naValue: 0,
+      naLabel: "Almost nothing saved",
+      appliesIf: () => true,
+      narrows: "Tightens or relaxes the safe-carry FOIR ceiling in O2/O4, and feeds the O1 hard-stop check.",
+    },
+    {
+      id: "cardUtilizationPct",
+      tier: "additional",
+      type: "number",
+      text: "On average, what % of your credit card limit do you carry as a balance?",
+      allowNA: true,
+      naValue: 0,
+      naLabel: "I don't use a credit card",
+      appliesIf: (a) => a.incomeType === "salaried" || a.incomeType === "pension",
+      narrows: "Above ~60% nudges the rate band up half a point in O3 (a widely-used underwriting signal).",
+    },
+    {
+      id: "upcomingExpense",
+      tier: "additional",
+      type: "text",
+      text: "Any large expense coming up in the next 12 months (school fee, medical, festival)?",
+      allowNA: true,
+      naValue: "",
+      naLabel: "Nothing major coming up",
+      appliesIf: () => true,
+      narrows: "Shown as a caution note in O4's stress case; doesn't change the number but changes the warning.",
+    },
+    {
+      id: "expectedIncomeUpliftPct",
+      tier: "additional",
+      type: "number",
+      text: "If this loan is for your business, roughly how much could it grow your monthly income (%)?",
+      allowNA: true,
+      naValue: 0,
+      naLabel: "Can't estimate",
+      appliesIf: (a) => a.purpose === "business_growth",
+      narrows: "A productive loan gets a slightly more generous safe-carry ceiling in O2, documented and capped at +5pp.",
+    },
+  ];
+
+  const api = { QUESTIONS };
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = api;
+  } else {
+    global.QuestionBank = api;
+  }
+})(typeof window !== "undefined" ? window : globalThis);
+</script>
+<script>
+/**
+ * engine.js — orchestration layer.
+ * Takes raw `answers` (from the wizard) + the applicable question list,
+ * and returns the full evaluation object the UI renders.
+ * No UI code. No DOM. Safe to run in Node for testing (see /docs generation script).
+ */
+(function (global) {
+  "use strict";
+
+  const R = typeof module !== "undefined" && module.exports ? require("./rules.js") : global.Rules;
+  const QB = typeof module !== "undefined" && module.exports ? require("./questions.js") : global.QuestionBank;
+
+  function applicableQuestions(answersSoFar) {
+    return QB.QUESTIONS.filter((q) => q.appliesIf(answersSoFar));
+  }
+
+  function nextQuestion(answers) {
+    const applicable = applicableQuestions(answers);
+    for (const q of applicable) {
+      if (answers[q.id] === undefined) return q;
+    }
+    return null;
+  }
+
+  function progress(answers) {
+    const applicable = applicableQuestions(answers);
+    const answered = applicable.filter((q) => answers[q.id] !== undefined).length;
+    return { answered, total: applicable.length };
+  }
+
+  function evaluate(answers) {
+    const a = normalize(answers);
+
+    // ---- routing -------------------------------------------------------
+    const routing = R.recommendProduct(a);
+    const product = R.PRODUCTS[routing.suggested];
+    const tier = R.scoreTier(a.creditScore);
+
+    // ---- confidence ------------------------------------------------------
+    const applicable = applicableQuestions(a);
+    const additional = applicable.filter((q) => q.tier === "additional");
+    const answeredAdditional = additional.filter((q) => a[q.id] !== undefined && a[q.id] !== "" ).length;
+    const confidence = R.computeConfidence(answeredAdditional, additional.length);
+    const widthMult = R.bandWidthMultiplier(confidence);
+
+    // ---- incomes -----------------------------------------------------
+    // Co-applicant income is formally documented and joins the application,
+    // so a lender counts it too — unlike informal family expense support,
+    // which only strengthens the borrower's own safe-carry view (below).
+    const lenderIncome = R.lenderViewIncome(a) + (Number(a.coApplicantIncome) || 0);
+    const safeIncome =
+      R.safeCarryIncome(a) + (Number(a.coApplicantIncome) || 0) + (a.financiallyDependent ? Number(a.monthlySupportAmount) || 0 : 0);
+
+    // ---- rate band (O3) -------------------------------------------------
+    let band = product.rateBands[tier].slice();
+    if (a.cardUtilizationPct && Number(a.cardUtilizationPct) >= 60) {
+      band = [band[0] + 0.5, band[1] + 0.5]; // nudge down a notch (worse) — documented signal
+    }
+    band = R.widenBand(band, widthMult);
+    const nominalRateForSizing = band[1]; // conservative: use the top of the band for affordability sizing
+
+    // ---- existing FOIR -----------------------------------------------
+    const incomeForFoirCheck = Math.max(safeIncome, 1);
+    const existingFoirPct = (Number(a.existingMonthlyEmi) || 0) / incomeForFoirCheck;
+
+    // ---- O2: two sanction numbers --------------------------------------
+    const tenure = Math.min(product.maxTenureMonths, tenureCapForAge(a.age));
+
+    // Lender-view sanction: FOIR-based on documented income, then capped by
+    // income-multiple (unsecured) or LTV (secured) — whichever binds first.
+    const lenderCeiling = R.lenderFoirCeiling(product, tier);
+    const lenderMaxEmi = Math.max(lenderCeiling * lenderIncome - (Number(a.existingMonthlyEmi) || 0), 0);
+    let lenderSanction = R.maxPrincipalForEmi(lenderMaxEmi, nominalRateForSizing, tenure);
+    let lenderCapReason = "your income and existing obligations (FOIR-based)";
+    if (product.secured && a.collateralValue) {
+      const ltvCap = Number(a.collateralValue) * product.ltvCap;
+      if (ltvCap < lenderSanction) {
+        lenderSanction = ltvCap;
+        lenderCapReason = `${Math.round(product.ltvCap * 100)}% of your collateral's value`;
+      }
+    } else if (!product.secured && product.incomeMultipleCap) {
+      const multipleCap = lenderIncome * product.incomeMultipleCap;
+      if (multipleCap < lenderSanction) {
+        lenderSanction = multipleCap;
+        lenderCapReason = `a lender's typical income-multiple cap for unsecured loans`;
+      }
+    }
+
+    // Safe-carry: FOIR-based on the borrower's real (blended, haircut) income.
+    let safeCeiling = R.safeCarryFoirCeiling(a);
+    if (a.purpose === "business_growth" && a.expectedIncomeUpliftPct) {
+      safeCeiling = R.clamp(safeCeiling + Math.min(Number(a.expectedIncomeUpliftPct), 20) / 400, 0.2, 0.55);
+    }
+    // FOIR-based safe EMI, then a second sanity cap against actual household
+    // expenses (see RULES.md §5) — the tighter of the two binds.
+    const foirSafeMaxEmi = Math.max(safeCeiling * safeIncome - (Number(a.existingMonthlyEmi) || 0), 0);
+    const safeMaxEmi = Math.min(foirSafeMaxEmi, R.expenseCappedEmi(a, safeIncome));
+    const safeEmiBoundBy = safeMaxEmi < foirSafeMaxEmi ? "expenses" : "foir";
+    let safeCarryAmount = R.maxPrincipalForEmi(safeMaxEmi, nominalRateForSizing, tenure);
+    if (product.secured && a.collateralValue) {
+      safeCarryAmount = Math.min(safeCarryAmount, Number(a.collateralValue) * product.ltvCap);
+    }
+
+    // ---- full underlying capacity (uncapped) --------------------------
+    const rawLenderSanction = Math.max(0, Math.round(lenderSanction));
+    const rawSafeCarryAmount = Math.max(0, Math.round(safeCarryAmount));
+
+    // ---- need-relative cap (see RULES.md §1b) -------------------------
+    // The numbers we PUT IN FRONT of the borrower never run more than 25% past
+    // what they came to borrow. Underlying capacity is kept for the explanation.
+    const cap = R.needCap(a.requestedAmount);
+    lenderSanction = Math.min(rawLenderSanction, cap);
+    safeCarryAmount = Math.min(rawSafeCarryAmount, cap);
+    const requested = Number(a.requestedAmount) || 0;
+    const cappedToNeed = cap !== Infinity && (rawLenderSanction > cap || rawSafeCarryAmount > cap);
+    const withinBothCeilings = requested > 0 && rawLenderSanction >= requested && rawSafeCarryAmount >= requested;
+
+    // ---- O1: verdict -----------------------------------------------------
+    // Checked against BOTH ceilings — a lender won't sanction more than it can
+    // verify, and the borrower shouldn't carry more than they can safely afford.
+    // Verdict and recommendedAmount must agree on which ceiling binds, or the
+    // app ends up saying "go ahead and borrow" next to an amount of ₹0.
+    // Verdict is judged on FULL underlying capacity, not the need-capped display
+    // number — otherwise the cap itself could never let "borrow less" fire.
+    const verdictResult = R.computeVerdict(
+      a,
+      existingFoirPct,
+      rawSafeCarryAmount,
+      rawLenderSanction,
+      requested,
+      product.secured
+    );
+
+    // ---- O4: EMI ceiling + tenure trade-off + stress case -----------------
+    // The recommended amount is the ask, clamped to true capacity — it can only
+    // ever be <= what the borrower asked for, never more.
+    const practicalCeiling = Math.min(rawSafeCarryAmount, rawLenderSanction);
+    const recommendedAmount = verdictResult.verdict === "dont" ? 0 : Math.min(requested, practicalCeiling);
+
+    // Tenure ladder reflects each product's real range — LAP runs to 15–20 years,
+    // a personal or two-wheeler loan does not.
+    const tenureOptions = [12, 24, 36, 48, 60, 84, 120, 180].filter((t) => t <= tenure);
+
+    // Stress case: income down 20% AND rate up 2pp — combined shock.
+    const stressIncome = safeIncome * 0.8;
+    const stressMaxEmi = Math.max(safeCeiling * stressIncome - (Number(a.existingMonthlyEmi) || 0), 0);
+    const stressRate = nominalRateForSizing + 2;
+
+    // Recommend the SHORTEST tenure that still survives the stress test — a longer
+    // tenure lowers the EMI but costs more interest overall, so we don't stretch
+    // it further than the borrower's safety margin needs. Fall back to the
+    // shortest tenure that at least fits the normal ceiling, then to the longest.
+    const tenureThatSurvivesStress = tenureOptions.find(
+      (t) => R.emiForLoan(recommendedAmount, stressRate, t) <= stressMaxEmi
+    );
+    const tenureThatFitsCeiling = tenureOptions.find(
+      (t) => R.emiForLoan(recommendedAmount, nominalRateForSizing, t) <= safeMaxEmi
+    );
+    const recommendedTenure =
+      tenureThatSurvivesStress || tenureThatFitsCeiling || tenureOptions[tenureOptions.length - 1] || tenure;
+    const tenureReason = tenureThatSurvivesStress
+      ? "stress"
+      : tenureThatFitsCeiling
+      ? "ceiling"
+      : "maxed";
+    const recommendedEmi = R.emiForLoan(recommendedAmount, nominalRateForSizing, recommendedTenure);
+
+    const tenureTradeoff = tenureOptions.map((t) => ({
+      months: t,
+      emiForRecommendedAmount: Math.round(R.emiForLoan(recommendedAmount, nominalRateForSizing, t)),
+      maxAmountAtSafeEmi: Math.round(R.maxPrincipalForEmi(safeMaxEmi, nominalRateForSizing, t)),
+    }));
+
+    const stressEmiAtRecommended = R.emiForLoan(recommendedAmount, stressRate, recommendedTenure);
+    const stressSurvives = stressEmiAtRecommended <= stressMaxEmi;
+
+    // ---- APR (O3 all-in cost) --------------------------------------------
+    const feeAmount = recommendedAmount * (product.processingFeePct / 100);
+    const apr = recommendedAmount > 0 ? R.solveAPR(recommendedAmount, feeAmount, nominalRateForSizing, recommendedTenure) : nominalRateForSizing;
+
+    // ---- assemble outputs --------------------------------------------
+    const outputs = {
+      confidence,
+      product: {
+        key: product.key,
+        label: product.label,
+        routingNote: routing.note,
+        requestedDiffers: routing.requestedDiffers,
+        borrowerUnsure: routing.borrowerUnsure,
+      },
+      O1: {
+        verdict: verdictResult.verdict, // "borrow" | "borrow_less" | "dont"
+        reasons: verdictResult.reasons,
+      },
+      O2: {
+        requestedAmount: requested,
+        lenderSanction,
+        lenderCapReason,
+        safeCarryAmount,
+        rawLenderSanction,
+        rawSafeCarryAmount,
+        cappedToNeed,
+        withinBothCeilings,
+        headroomMultiple: R.NEED_HEADROOM_MULTIPLE,
+        useThisOne: safeCarryAmount <= lenderSanction ? "safeCarryAmount" : "lenderSanction",
+        why: buildO2Why({
+          requested,
+          safeIncome,
+          lenderCapReason,
+          rawLenderSanction,
+          rawSafeCarryAmount,
+          cappedToNeed,
+          withinBothCeilings,
+          headroomMultiple: R.NEED_HEADROOM_MULTIPLE,
+          safeEmiBoundBy,
+        }),
+      },
+      O3: {
+        rateBandPct: band,
+        aprPct: R.round1(apr),
+        feeAmount: Math.round(feeAmount),
+        tier,
+        why: `Your rate band reflects a ${tier === "unknown" ? "credit score you don't yet know (treated as a middle, not worst-case, tier)" : tier + " credit tier"} on a ${product.label}${confidence < 70 ? ", widened because you've answered only the essentials so far" : ""}.`,
+      },
+      O4: {
+        recommendedAmount,
+        recommendedTenureMonths: recommendedTenure,
+        maxTenureMonths: tenure,
+        recommendedEmi: Math.round(recommendedEmi),
+        maxSafeEmi: Math.round(safeMaxEmi),
+        tenureTradeoff,
+        stress: {
+          scenario: "Income drops 20% or your rate rises 2 percentage points",
+          survives: stressSurvives,
+          stressMaxEmi: Math.round(stressMaxEmi),
+          stressEmiAtRecommended: Math.round(stressEmiAtRecommended),
+        },
+        emiCeilingBoundBy: safeEmiBoundBy,
+        why: buildO4Why({
+          recommendedEmi,
+          recommendedAmount,
+          rate: R.round1(nominalRateForSizing),
+          recommendedTenure,
+          safeMaxEmi,
+          safeEmiBoundBy,
+          tenureReason,
+        }),
+      },
+    };
+
+    outputs.card = buildCard(a, outputs, product, tier);
+    return outputs;
+  }
+
+  function inr(n) {
+    return "₹" + Math.round(n).toLocaleString("en-IN");
+  }
+
+  // One-sentence "why" for O2, per RULES.md rule 4 ("every number has a why").
+  function buildO2Why(x) {
+    if (x.rawSafeCarryAmount <= 0) {
+      return `There's no room for a new EMI right now without cutting into essentials — see the verdict above. This isn't a permanent no; clearing existing debt or rebuilding a savings buffer changes it.`;
+    }
+    const incomeNote = x.safeEmiBoundBy === "expenses"
+      ? `what's actually left after your essential expenses and existing EMIs`
+      : `what you actually take home each month (${inr(x.safeIncome)}), after existing EMIs`;
+
+    if (x.withinBothCeilings && x.cappedToNeed) {
+      return `You asked for ${inr(x.requested)}, and both a lender's likely sanction and your own safe capacity are comfortably above that — so your ask is the number that matters. We don't headline more than ${Math.round((x.headroomMultiple - 1) * 100)}% over what you came for; your underlying safe capacity is roughly ${inr(x.rawSafeCarryAmount)}, sized off ${incomeNote}.`;
+    }
+    if (x.rawSafeCarryAmount <= x.rawLenderSanction) {
+      return `A lender will look mainly at ${x.lenderCapReason} and may offer more. Your safe number is sized off ${incomeNote}, so it still holds in a slow month — use this lower number.`;
+    }
+    return `Your real repayment capacity (${inr(x.safeIncome)}/month, including income a lender can't fully verify) is higher than what a lender will sanction on ${x.lenderCapReason}. The lender's number is your real ceiling — you likely can't get more even though you could afford it.`;
+  }
+
+  function buildO4Why(x) {
+    if (!x.recommendedAmount || x.recommendedAmount <= 0) {
+      return `No EMI is sized while the verdict above stands — there is no amount this app will point you toward borrowing right now.`;
+    }
+    const cost = `₹${Math.round(x.recommendedEmi).toLocaleString("en-IN")}/month is what a ₹${x.recommendedAmount.toLocaleString("en-IN")} loan costs at ${x.rate}% over ${x.recommendedTenure} months`;
+    const ceil = `Your safe EMI ceiling is ₹${Math.round(x.safeMaxEmi).toLocaleString("en-IN")}/month${x.safeEmiBoundBy === "expenses" ? " (set by what's left after your household expenses, not FOIR)" : ""}`;
+    if (x.tenureReason === "stress") {
+      return `${cost} — the shortest tenure that still holds up under the stress test below. ${ceil}; a shorter tenure would fit that ceiling but leave no room if your income dips or the rate rises.`;
+    }
+    if (x.tenureReason === "ceiling") {
+      return `${cost} — the shortest tenure that fits your safe EMI ceiling. ${ceil}. It does not pass the combined stress test below, so treat this as the ceiling, not a comfortable EMI.`;
+    }
+    return `${cost}, the longest tenure available for this product. ${ceil}, and even at full tenure this EMI is tight against it — a smaller amount would be the safer move.`;
+  }
+
+  function buildCard(a, outputs, product, tier) {
+    const O = outputs;
+    const productTag = O.product.requestedDiffers
+      ? " (recommended instead of what you first picked)"
+      : O.product.borrowerUnsure
+      ? " (recommended for you)"
+      : "";
+    const rateStr = `${O.O3.rateBandPct[0]}% – ${O.O3.rateBandPct[1]}%`;
+
+    // Structured key/value rows for the card UI, plus a flat `lines` array kept
+    // for the plain-text run-throughs and the smoke tests.
+    let fields;
+    if (O.O1.verdict === "dont") {
+      fields = [
+        { k: "Product", v: product.label + productTag },
+        { k: "Verdict", v: labelForVerdict(O.O1.verdict) },
+        { k: "Requested", v: `₹${O.O2.requestedAmount.toLocaleString("en-IN")} — not fundable safely yet` },
+        { k: "Fair rate (for later)", v: `${rateStr} (APR ≈ ${O.O3.aprPct}%)` },
+      ];
+    } else {
+      const askV =
+        O.O4.recommendedAmount < O.O2.requestedAmount
+          ? `₹${O.O4.recommendedAmount.toLocaleString("en-IN")} over ${O.O4.recommendedTenureMonths} mo (less than the ₹${O.O2.requestedAmount.toLocaleString("en-IN")} you came for)`
+          : `₹${O.O4.recommendedAmount.toLocaleString("en-IN")} over ${O.O4.recommendedTenureMonths} months`;
+      fields = [
+        { k: "Product", v: product.label + productTag },
+        { k: "Verdict", v: labelForVerdict(O.O1.verdict) },
+        { k: "Ask for", v: askV },
+        { k: "Fair rate for your profile", v: rateStr },
+        { k: "All-in APR (incl. fee)", v: `≈ ${O.O3.aprPct}%` },
+        { k: "EMI ceiling — never exceed", v: `₹${O.O4.maxSafeEmi.toLocaleString("en-IN")}/month` },
+      ];
+      if (a.existingOffers) fields.push({ k: "Lender's quote so far", v: String(a.existingOffers) });
+    }
+
+    const whyLine = O.O1.verdict === "dont" ? O.O1.reasons[0] : O.O2.why;
+    const lines = fields.map((f) => `${f.k}: ${f.v}`).concat(`Why: ${whyLine}`);
+    return { lines, fields, whyLine, confidence: O.confidence };
+  }
+
+  function labelForVerdict(v) {
+    if (v === "dont") return "Don't borrow right now";
+    if (v === "borrow_less") return "Borrow less than you asked for";
+    return "Go ahead and borrow";
+  }
+
+  function tenureCapForAge(age) {
+    const yearsToSixty = Math.max(60 - (Number(age) || 30), 1);
+    return yearsToSixty * 12;
+  }
+
+  function normalize(answers) {
+    // Fill safe defaults for anything genuinely unanswered so the engine never
+    // divides by zero or treats "blank" as a false negative signal. This is
+    // ONLY arithmetic safety — it never narrows a range (see rules.js comments).
+    const a = Object.assign({}, answers);
+    if (a.creditScore === "" || a.creditScore === undefined) a.creditScore = null;
+    if (a.collateralType === undefined) a.collateralType = "none";
+    return a;
+  }
+
+  const api = { applicableQuestions, nextQuestion, progress, evaluate };
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = api;
+  } else {
+    global.Engine = api;
+  }
+})(typeof window !== "undefined" ? window : globalThis);
+</script>
+<script type="text/babel">
+const { useState, useMemo, useEffect } = React;
+
+const SAMPLE_BORROWERS = {
+  priya: {
+    name: "Priya, 29 — salaried",
+    desc: "Bengaluru IT employee, ₹1.1L/mo, one car loan, score 780. Wants ₹8L for a wedding.",
+    answers: {
+      purpose: "wedding", requestedAmount: 800000, loanTypeRequested: "personal_loan",
+      age: 29, incomeType: "salaried", documentedMonthlyIncome: 110000, existingMonthlyEmi: 14000,
+      householdExpenses: 48000, dependentsCount: 0, creditScore: 780, jobTenureYears: 5,
+      existingOffers: "14%", collateralType: "none", coApplicantIncome: 0, financiallyDependent: false,
+      recentBounce: false, emergencySavingsMonths: 3, cardUtilizationPct: 20, upcomingExpense: "",
+    },
+  },
+  ravi: {
+    name: "Ravi, 42 — kirana owner",
+    desc: "Mysuru shopkeeper, cash income, ITR shows ₹35k/mo, owns the shop, no credit score. Wants ₹15L to expand.",
+    answers: {
+      purpose: "business_growth", requestedAmount: 1500000, loanTypeRequested: "business_loan",
+      age: 42, incomeType: "self_employed_formal", documentedMonthlyIncome: 35000, selfReportedMonthlyIncome: 60000,
+      existingMonthlyEmi: 0, householdExpenses: 30000, dependentsCount: 0, creditScore: "",
+      businessAgeYears: 14, variableIncomeSharePct: 40, collateralType: "property", collateralValue: 4500000,
+      coApplicantIncome: 18000, financiallyDependent: false, recentBounce: false, emergencySavingsMonths: 2,
+      expectedIncomeUpliftPct: 15, existingOffers: "",
+    },
+  },
+  anita: {
+    name: "Anita, 35 — gig + tailoring",
+    desc: "Hubballi delivery rider, ₹28k/mo, husband out of work, three app loans, one bounce last month. Wants ₹1.5L for an EV.",
+    answers: {
+      purpose: "vehicle_purchase", requestedAmount: 150000, loanTypeRequested: "two_wheeler_loan",
+      age: 35, incomeType: "gig_informal", documentedMonthlyIncome: 0, selfReportedMonthlyIncome: 28000,
+      existingMonthlyEmi: 5000, householdExpenses: 20000, dependentsCount: 3, creditScore: "",
+      variableIncomeSharePct: 50, collateralType: "none", coApplicantIncome: 0, financiallyDependent: false,
+      existingLoansDetail: "3 app loans, Rs 35,000 outstanding, 30%+ rate", recentBounce: true,
+      emergencySavingsMonths: 0, existingOffers: "",
+    },
+  },
+};
+
+// Questions where a leading ₹ affix reads naturally.
+const RUPEE_QUESTIONS = new Set([
+  "requestedAmount", "documentedMonthlyIncome", "selfReportedMonthlyIncome", "existingMonthlyEmi",
+  "householdExpenses", "collateralValue", "coApplicantIncome", "monthlySupportAmount",
+]);
+
+function inr(n) {
+  if (n === undefined || n === null || isNaN(n)) return "₹0";
+  return "₹" + Math.round(n).toLocaleString("en-IN");
+}
+
+function QuestionField({ q, answers, onAnswer }) {
+  const text = typeof q.text === "function" ? q.text(answers) : q.text;
+  const [val, setVal] = useState(answers[q.id] !== undefined && answers[q.id] !== null ? answers[q.id] : "");
+
+  const submit = (v) => onAnswer(q.id, v);
+  const naButton = q.allowNA ? (
+    <button type="button" className="btn btn-ghost" onClick={() => submit(q.naValue)}>
+      {q.naLabel || "Not applicable / don't know"}
+    </button>
+  ) : null;
+
+  return (
+    <div>
+      <div className={`phase-pill${q.tier === "additional" ? " optional" : ""}`}>
+        {q.tier === "must" ? "Essential" : "Optional — narrows your numbers"}
+      </div>
+      <h2 className="q-prompt">{text}</h2>
+      {q.help && <p className="q-help">{q.help}</p>}
+      {q.tier === "additional" && !q.help && <p className="q-why">Why we ask: {q.narrows}</p>}
+
+      {q.type === "select" && (
+        <div className="opts">
+          {q.options.map((o) => (
+            <button key={o.value} className={`opt${answers[q.id] === o.value ? " selected" : ""}`} onClick={() => submit(o.value)}>
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {q.type === "boolean" && (
+        <div className="opts two-col">
+          <button className={`opt${answers[q.id] === true ? " selected" : ""}`} onClick={() => submit(true)}>Yes</button>
+          <button className={`opt${answers[q.id] === false ? " selected" : ""}`} onClick={() => submit(false)}>No</button>
+        </div>
+      )}
+
+      {(q.type === "number" || q.type === "text") && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (q.type === "number" && val === "") return;
+            submit(q.type === "number" ? Number(val) : val);
+          }}
+        >
+          <div className="field">
+            {q.type === "number" && RUPEE_QUESTIONS.has(q.id) && <span className="affix">₹</span>}
+            <input
+              autoFocus
+              type={q.type === "number" ? "number" : "text"}
+              inputMode={q.type === "number" ? "numeric" : undefined}
+              value={val}
+              onChange={(e) => setVal(e.target.value)}
+              placeholder={q.type === "number" ? "" : "Type your answer"}
+            />
+          </div>
+          <div className="btn-row">
+            <button type="submit" className="btn btn-primary">Next</button>
+            {naButton}
+          </div>
+        </form>
+      )}
+    </div>
+  );
+}
+
+function Wizard({ answers, setAnswers, onFinish }) {
+  const applicable = useMemo(() => Engine.applicableQuestions(answers), [answers]);
+  const [skipped, setSkipped] = useState(() => new Set());
+  const [milestoneShown, setMilestoneShown] = useState(false);
+
+  const current = applicable.find((q) => answers[q.id] === undefined && !skipped.has(q.id));
+  const answeredList = applicable.filter((q) => answers[q.id] !== undefined);
+  const answeredCount = answeredList.length;
+  const mustTotal = applicable.filter((q) => q.tier === "must").length;
+  const mustAnswered = applicable.filter((q) => q.tier === "must" && answers[q.id] !== undefined).length;
+  const mustDone = mustAnswered >= mustTotal;
+  const optionalLeft = applicable.filter(
+    (q) => q.tier === "additional" && answers[q.id] === undefined && !skipped.has(q.id)
+  ).length;
+
+  useEffect(() => {
+    if (!current) onFinish();
+  }, [current]);
+
+  if (!current) return null;
+
+  function handleAnswer(id, value) {
+    setAnswers((prev) => ({ ...prev, [id]: value }));
+  }
+
+  function goBack() {
+    if (!answeredList.length) return;
+    const last = answeredList[answeredList.length - 1];
+    setAnswers((prev) => {
+      const n = { ...prev };
+      delete n[last.id];
+      return n;
+    });
+    setSkipped((s) => {
+      const n = new Set(s);
+      n.delete(last.id);
+      return n;
+    });
+  }
+
+  // Milestone: shown once, the moment the essentials are done and the first
+  // optional question is up. A borrower can stop here with wide ranges.
+  if (mustDone && !milestoneShown && current.tier === "additional") {
+    return (
+      <div className="panel milestone">
+        <p className="big">The essentials are in.</p>
+        <p>
+          You can see your four numbers now — with wide ranges and lower confidence —
+          or answer {optionalLeft} more optional question{optionalLeft === 1 ? "" : "s"}, each of which tightens something.
+        </p>
+        <div className="btn-row" style={{ justifyContent: "center" }}>
+          <button className="btn btn-primary" onClick={() => setMilestoneShown(true)}>Keep going</button>
+          <button className="btn btn-ghost" onClick={onFinish}>See my results now</button>
+        </div>
+      </div>
+    );
+  }
+
+  const pct = Math.round((answeredCount / applicable.length) * 100);
+
+  return (
+    <div className="panel">
+      <div className="progress">
+        <span>{mustDone ? "Tightening" : "Essentials"} · {answeredCount}/{applicable.length}</span>
+        <div className="bar"><div className="fill" style={{ width: `${pct}%` }} /></div>
+      </div>
+
+      <QuestionField key={current.id} q={current} answers={answers} onAnswer={handleAnswer} />
+
+      <div className="wizard-actions">
+        <div className="left">
+          {answeredCount > 0 && <button className="link" onClick={goBack}>← Back</button>}
+          {current.tier === "additional" && (
+            <button className="link" onClick={() => setSkipped((s) => new Set(s).add(current.id))}>Skip this one</button>
+          )}
+        </div>
+        {mustDone && (
+          <button className="link strong" onClick={onFinish}>
+            See my results{optionalLeft ? ` (skip ${optionalLeft})` : ""} →
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function confidenceTier(c) {
+  return c >= 80 ? "high" : c >= 60 ? "medium" : "low";
+}
+
+function Results({ answers, onAnswerMore, onRestart }) {
+  const out = useMemo(() => Engine.evaluate(answers), [answers]);
+  const { O1, O2, O3, O4, card, confidence, product } = out;
+  const verdictLabel = { borrow: "Go ahead and borrow", borrow_less: "Borrow less than you asked for", dont: "Don't borrow right now" }[O1.verdict];
+  const cTier = confidenceTier(confidence);
+  const cLabel = cTier === "high" ? "High confidence" : cTier === "medium" ? "Medium confidence" : "Low confidence — ranges widened";
+  const showRoutingNote = (product.requestedDiffers || product.borrowerUnsure) && product.routingNote;
+
+  return (
+    <div>
+      <div className={`verdict-banner ${O1.verdict}`}>
+        <div className="label">{verdictLabel}</div>
+        <p>{O1.reasons[0]}</p>
+      </div>
+
+      <div className="confidence-row">
+        <span className={`confidence-chip ${cTier}`}>{cLabel}</span>
+        <span>{confidence}/100 — {cTier === "high" ? "you answered nearly everything that applies" : "answer more questions to tighten these"}</span>
+      </div>
+
+      {showRoutingNote && (
+        <div className="panel" style={{ marginBottom: "1rem", background: "var(--accent-soft)", borderColor: "var(--accent)" }}>
+          <div className="out-label">{product.borrowerUnsure ? "Product pick" : "Product note"}</div>
+          <p style={{ margin: 0, fontSize: ".9rem" }}>{product.routingNote}</p>
+        </div>
+      )}
+
+      {O1.reasons.length > 1 && (
+        <div className="panel">
+          <div className="out-label"><span className="o">O1</span>Should you borrow?</div>
+          {O1.reasons.map((r, i) => (
+            <p key={i} style={{ margin: i ? ".5rem 0 0" : 0, fontSize: ".92rem", color: "var(--muted)" }}>{r}</p>
+          ))}
+        </div>
+      )}
+
+      <div className="panel">
+        <div className="out-label"><span className="o">O2</span>How much are you really eligible for?</div>
+        <p className="req-line">Your request: <b>{inr(O2.requestedAmount)}</b></p>
+
+        {O2.rawSafeCarryAmount <= 0 ? (
+          <div className="num-card dim">
+            <div className="num-tag">Amount to ask for right now</div>
+            <div className="num-val">₹0 — see the verdict</div>
+          </div>
+        ) : O2.withinBothCeilings ? (
+          <>
+            <div className="num-card use">
+              <div className="num-tag">Your {inr(O2.requestedAmount)} request clears both ceilings</div>
+              <div className="num-val">Ask for {inr(O2.requestedAmount)}</div>
+              <span className="use-flag">Use this</span>
+            </div>
+            <p className="use-line">
+              Both a lender's likely sanction and your own safe-carry capacity are above what you
+              came for — so <strong>the amount you asked for is the number to use</strong>. No case here for asking a lender for more.
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="two-num">
+              <div className={`num-card${O2.useThisOne === "lenderSanction" ? " use" : " dim"}`}>
+                <div className="num-tag">A lender will likely sanction</div>
+                <div className="num-val">{inr(O2.lenderSanction)}{O2.cappedToNeed ? "+" : ""}</div>
+                {O2.useThisOne === "lenderSanction" && <span className="use-flag">Use this one</span>}
+              </div>
+              <div className={`num-card${O2.useThisOne === "safeCarryAmount" ? " use" : " dim"}`}>
+                <div className="num-tag">You can safely carry</div>
+                <div className="num-val">{inr(O2.safeCarryAmount)}{O2.cappedToNeed ? "+" : ""}</div>
+                {O2.useThisOne === "safeCarryAmount" && <span className="use-flag">Use this one</span>}
+              </div>
+            </div>
+            <p className="use-line">
+              Use the <strong>{O2.useThisOne === "safeCarryAmount" ? "lower, safe-carry" : "lender"}</strong> number — {inr(Math.min(O2.safeCarryAmount, O2.lenderSanction))}.
+            </p>
+          </>
+        )}
+
+        {O2.cappedToNeed && O2.rawSafeCarryAmount > 0 && (
+          <p className="cap-note">
+            Underlying capacity is higher — about {inr(O2.rawSafeCarryAmount)} safe-carry, and a lender
+            could stretch to roughly {inr(O2.rawLenderSanction)}. We cap what we show at 25% over your stated
+            need, because borrowing well past what you came for is its own risk.
+          </p>
+        )}
+        <p className="why-line">{O2.why}</p>
+      </div>
+
+      <div className="panel">
+        <div className="out-label"><span className="o">O3</span>What's a fair rate for you?</div>
+        <div className="band-line">{O3.rateBandPct[0]}% – {O3.rateBandPct[1]}%</div>
+        <p className="band-sub">all-in APR ≈ {O3.aprPct}% (includes the {inr(O3.feeAmount)} processing fee)</p>
+        <p className="why-line">{O3.why}</p>
+      </div>
+
+      <div className="panel">
+        <div className="out-label"><span className="o">O4</span>What EMI should you agree to?</div>
+        <div className="two-num">
+          <div className="num-card use">
+            <div className="num-tag">Recommended EMI · {O4.recommendedTenureMonths} months</div>
+            <div className="num-val">{inr(O4.recommendedEmi)}/mo</div>
+          </div>
+          <div className="num-card">
+            <div className="num-tag">Hard ceiling — do not exceed</div>
+            <div className="num-val">{inr(O4.maxSafeEmi)}/mo</div>
+          </div>
+        </div>
+        <p className="why-line">{O4.why}</p>
+
+        {O4.recommendedAmount > 0 && (
+          <>
+            <table className="trade">
+              <thead>
+                <tr><th>Tenure</th><th className="num">EMI at your amount</th><th className="num">Max loan at safe EMI</th></tr>
+              </thead>
+              <tbody>
+                {O4.tenureTradeoff.map((t) => (
+                  <tr key={t.months} className={t.months === O4.recommendedTenureMonths ? "rec" : ""}>
+                    <td>{t.months} mo{t.months === O4.recommendedTenureMonths ? " · recommended" : ""}</td>
+                    <td className="num">{inr(t.emiForRecommendedAmount)}</td>
+                    <td className="num">{inr(t.maxAmountAtSafeEmi)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div className={`stress-box ${O4.stress.survives ? "ok" : ""}`}>
+              <strong>Stress test — {O4.stress.scenario}:</strong>{" "}
+              {O4.stress.survives
+                ? `still within a safe EMI (₹${O4.stress.stressMaxEmi.toLocaleString("en-IN")}/mo ceiling vs ₹${O4.stress.stressEmiAtRecommended.toLocaleString("en-IN")}/mo owed).`
+                : `your EMI (₹${O4.stress.stressEmiAtRecommended.toLocaleString("en-IN")}/mo) would exceed a safe ceiling of ₹${O4.stress.stressMaxEmi.toLocaleString("en-IN")}/mo. Take a smaller amount or longer tenure.`}
+            </div>
+          </>
+        )}
+        {O4.recommendedAmount === 0 && (
+          <p className="why-line">No amount is sized while the verdict stands. The rate band above is shown for reference only.</p>
+        )}
+      </div>
+
+      <div className="card">
+        <div className="card-eyebrow">Negotiation Card</div>
+        <h2>Hold this up to the lender</h2>
+        <div className="card-grid">
+          {card.fields.map((f, i) => (
+            <div className="card-row" key={i}>
+              <span className="k">{f.k}</span>
+              <span className="v">{f.v}</span>
+            </div>
+          ))}
+        </div>
+        <div className="card-line"><strong>Why:</strong> {card.whyLine}</div>
+        <div className="card-foot">Confidence {card.confidence}/100 · generated in your browser · nothing stored or sent</div>
+      </div>
+
+      <div className="btn-row">
+        <button className="btn btn-ghost" onClick={onAnswerMore}>Answer more questions</button>
+        <button className="btn btn-ghost" onClick={onRestart}>Start over</button>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [answers, setAnswers] = useState(null);
+  const [screen, setScreen] = useState("intro"); // intro | wizard | results
+  const [wizardRun, setWizardRun] = useState(0);
+
+  function start(initial, toResults) {
+    setAnswers(initial || {});
+    setWizardRun((n) => n + 1);
+    setScreen(toResults ? "results" : "wizard");
+  }
+  function restart() {
+    setAnswers(null);
+    setScreen("intro");
+  }
+
+  return (
+    <div className="shell">
+      <div className="topbar">
+        <div>
+          <div className="wordmark">Borrower <em>Copilot</em></div>
+          <div className="tag">Know your number before the lender tells you theirs</div>
+        </div>
+        {screen !== "intro" && <button className="reset-link" onClick={restart}>Start over</button>}
+      </div>
+
+      <main aria-live="polite">
+        {screen === "intro" && (
+          <>
+            <div className="panel">
+              <h1 className="hero">Before you walk into a lender, walk through this.</h1>
+              <p className="lede">
+                Answer questions about your income and what you want to borrow. You get a verdict, the two
+                eligibility numbers that actually matter, a fair rate band, an EMI ceiling, and a one-page
+                card to negotiate with. Anything you can't answer has a "don't know" option — the ranges
+                just widen and the app says so.
+              </p>
+              <div className="privacy">🔒&nbsp; No login, no bureau pull. Nothing you type leaves this browser tab.</div>
+              <button className="btn btn-primary btn-block" onClick={() => start({})}>Start</button>
+            </div>
+
+            <div className="panel">
+              <div className="out-label">Or try a sample borrower</div>
+              <div className="samples">
+                {Object.entries(SAMPLE_BORROWERS).map(([key, b]) => (
+                  <button key={key} className="sample-card" onClick={() => start(b.answers, true)}>
+                    <span className="name">{b.name}</span>
+                    <span className="desc">{b.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {screen === "wizard" && answers && (
+          <Wizard key={wizardRun} answers={answers} setAnswers={setAnswers} onFinish={() => setScreen("results")} />
+        )}
+
+        {screen === "results" && answers && (
+          <Results
+            answers={answers}
+            onAnswerMore={() => {
+              setWizardRun((n) => n + 1);
+              setScreen("wizard");
+            }}
+            onRestart={restart}
+          />
+        )}
+      </main>
+    </div>
+  );
+}
+
+if (typeof global !== "undefined" && global.__EXPOSE_FOR_TEST__) {
+  global.__components = { Wizard, Results, QuestionField, App, SAMPLE_BORROWERS };
+} else {
+  ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+}
+</script>
+</body>
+</html>
